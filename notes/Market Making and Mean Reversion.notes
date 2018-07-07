@@ -1,0 +1,9 @@
+https://www.seas.upenn.edu/~mkearns/papers/marketmaking.pdf
+
+This is beautiful. Use the poloni recorder to replicate and calculate params and profitability over various time epochs and with more realistic assumptions (such as trading costs).
+
+For example, how well does price action resembles the Ornstein-Uhlenbeck process, and what are the gamma and sigma for various markets and averaging rates.
+
+A natural place to run this algo is bitmex.
+
+LOL, you know it's time to run the algo when mu is flat. You know to run PGP when it's a global bull run.

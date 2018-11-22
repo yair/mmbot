@@ -1,0 +1,11 @@
+The current idea looks something like this - Fit a parabola to the market depth (is that the right shape?) to find a robust midpoint. Restrict its reach to a certain depth (I think currently 20k mix is a good number, but we'll need to think how to update that number when market conditions change).
+Around that midpoint (mid), constuct a probability density function (PDF) shape as a mexican hat. ((x-mid)^2*exp(-(x-mid)^2), with additional params for normalization and determining the width of the curve and the 'pointiness' of the side lobes).
+The width of the gap should be hard capped from below (at e.g. 5% of the current price), and from above by the parabola's width (at say %50 of its width).
+That PDF is basically where we sample our orders from, with certain parametrized caveats --
+1. hard gap - an area around the midpoint where we don't place orders. Might be better to use x^4e^-x^2 to achieve that.
+2. take zone and take limit - an area around the midpoint where we can eat small orders on the wrong side of the robust gap, and a limit on the maximum size we can trade there.
+
+Some math = 
+nx = (x-mid)/gap_size (e.g. (x-35sat)/0.05)
+pdf = nx^2*exp(-nx^2) for a more natural/liquid dist or nx^4*exp(-nx^2) for a more gappy/pointy/profitable dist.
+Skew can be acheived by adding x*skew/gap_size to the exponent. This is useful perhaps for automatically rebalancing the account and should be experimented with (and the exact values to put there should be derived from account imbalance etc.).

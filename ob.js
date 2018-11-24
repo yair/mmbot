@@ -32,7 +32,7 @@ function simple_width (ob, limit, cash_value = false) {
     for (var [price, amount] of ob.asks) {
         accum += cash_value ? amount * price : amount;
         if (accum >= limit) {
-            return (price - from);
+            return [(price + from) / 2., price - from];
         }
     }
     throw ("simple_width: ob depleted on the ask side");

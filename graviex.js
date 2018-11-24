@@ -18,7 +18,7 @@ module.exports = {
 	get_orderbook:		function (market, func) { send_authed_get_cmd ('depth.json', '&market=' + market, x => new OB (x['asks'], x['bids']), func); },
 	get_current_orders: function (market, func) { send_authed_get_cmd ('orders.json', '&market=' + market, x => x, func); },
 
-	get_account_info:   function (func) { send_authed_post_cmd ('members/me.json', x => x, func); },
+	get_balances:		function (func) { send_authed_post_cmd ('members/me.json', x => new Map(x['accounts'].map(i => [i.currency, i.balance])), func); },
 }
 
 function send_authed_get_cmd(cmd, params, proc, func) {

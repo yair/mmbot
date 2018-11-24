@@ -1,4 +1,9 @@
 {
     "exchange":"graviex",
-    "market": "mixbtc"
+    "market": "mixbtc",
+    "asset": "mix",
+    "cash": "btc",
+    "distribution": "quadratic-normal",
+    "trade_fraction": 0.4,
+    "min_trade": 0.08,
 }

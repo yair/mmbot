@@ -9,3 +9,7 @@ Some math =
 nx = (x-mid)/gap_size (e.g. (x-35sat)/0.05)
 pdf = nx^2*exp(-nx^2) for a more natural/liquid dist or nx^4*exp(-nx^2) for a more gappy/pointy/profitable dist.
 Skew can be acheived by adding x*skew/gap_size to the exponent. This is useful perhaps for automatically rebalancing the account and should be experimented with (and the exact values to put there should be derived from account imbalance etc.).
+integral (-inf,inf) of x^2*exp(-alpha*x^2) = sqrt(pi)/2*alpha^(3/2)
+integral (-int,int) of x^4*exp(-alpha*x^2) = 3*sqrt(pi)/4*alpha^(5/2)
+But these are just for normalization. We need something for sampling the distributions.
+We'll write something for sampling the distributions.

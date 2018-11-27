@@ -4,6 +4,9 @@
     "asset": "mix",
     "cash": "btc",
     "distribution": "quadratic-normal",
-    "trade_fraction": 0.4,
-    "min_trade": 0.08,
+    "buy_fraction": 0.4,
+    "sell_fraction": 0.4,
+    "width_compression": 0.1,
+    "min_width": 3e-8,
+    "max_width": 5e-7
 }

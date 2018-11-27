@@ -2,10 +2,12 @@
 
 var SortedArrayMap = require("collections/sorted-array-map");
 
-module.exports = function (asks_map, bids_map) {
+module.exports = function (asks, bids) {
 
-    this.asks = SortedArrayMap (asks_map, function (a, b) { return a == b; }, function (a, b) { return a < b; });
-    this.bids = SortedArrayMap (bids_map, function (a, b) { return a == b; }, function (a, b) { return a > b; });
+//    this.asks = SortedArrayMap (asks_map, function (a, b) { return a == b; }, function (a, b) { return a < b; });
+//    this.bids = SortedArrayMap (bids_map, function (a, b) { return a == b; }, function (a, b) { return a > b; });
+    this.asks = asks.reverse();
+    this.bids = bids;
 //    this.form (limit, cash_value=false) = simple_width (this, limit, cash_value);
 //    this.subtract (that) = ob_subtract (this, that);
     this.form = simple_width;
@@ -17,11 +19,11 @@ function simple_width (ob, limit, cash_value = false) {
     // limit - maximum market depth to consider
     // cash_value - limit is given in asset units (sell side biased) or cash units (buy side biased)
 
-    // prolly could be faster
     var accum = 0;
     var from = 0;
-    for (var [price, amount] of ob.bids) {
-        accum += cash_value ? amount * price : amount;
+    for (var i = 0; i < ob['bids'].length; i++) {
+        var [price, amount] = ob['bids'][i];
+        accum += parseFloat(cash_value) ? parseFloat(amount) * parseFloat(price) : parseFloat(amount);
         if (accum >= limit) {
             from = price;
             break;
@@ -29,10 +31,11 @@ function simple_width (ob, limit, cash_value = false) {
     }
     if (from == 0) throw ("simple_width: ob depleted on the bid side");
     accum = 0;
-    for (var [price, amount] of ob.asks) {
-        accum += cash_value ? amount * price : amount;
+    for (var i = 0; i < ob['asks'].length; i++) {
+        var [price, amount] = ob['asks'][i];
+        accum += cash_value ? parseFloat(amount) * parseFloat(price) : parseFloat(amount);
         if (accum >= limit) {
-            return [(price + from) / 2., price - from];
+            return [(parseFloat(price) + parseFloat(from)) / 2., parseFloat(price) - parseFloat(from)];
         }
     }
     throw ("simple_width: ob depleted on the ask side");

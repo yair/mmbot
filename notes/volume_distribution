@@ -1,0 +1,20 @@
+According to an empirical study at https://arxiv.org/pdf/cond-mat/0102518.pdf , limit order distribution is approximately a power law with an exponent of 2.
+The corresponding PDF is cut off at the uv end by the total volume and from below by the exchange minumum order size and our need to keep the number of orders we post reasonable.
+unnormalized pdf = 1/x^2, x in [m_min, x_max]
+unnormalized cdf = int_{x_min}^{x}{t^-2}dt = -1/t|_{x_min}^x
+Normalization = -C/t|_{x_min}^{x_max} = 1 = C(1/x_min - 1/x_max)
+Norm const. C = 1/(1/x_min - x/x_max) = x_min*x_max/x_max-x_min
+The average order size is --
+<x> = int_{x_min}^{x_max}{x * pdf dx} = C*int{1/x dx} = C(ln(x_max/x_min))
+Expected number of orders -- <n> = x_max/<x> = (x_max-x_min)/(x_min * ln(x_max/x_min)) = (x_max/x_min - 1)/ln(x_max/x_min)
+We want to solve this for x_min, which I don't know how to do analytically, but here are some numerical approximations --
+n = 1 => x_min = xmax/1.
+n = 2 => x_min = xmax/3.51
+n = 3 => x_min = xmax/6.71
+n = 4 => x_min = xmax/10.4
+n = 5 => x_min = xmax/14.3
+n = 6 => x_min = xmax/18.5
+n = 7 => x_min = xmax/22.9
+n = 8 => x_min = xmax/27.5
+n = 9 => x_min = xmax/32.3
+n = 10 => x_min = xmax/37.2

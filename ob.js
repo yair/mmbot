@@ -12,6 +12,8 @@ module.exports = function (asks, bids) {
 //    this.subtract (that) = ob_subtract (this, that);
     this.form = simple_width;
     this.subtract = ob_subtract;
+	this.max_bid = this.bids[0][0];
+	this.min_ask = this.asks[0][0];
 };
 
 function simple_width (ob, limit, cash_value = false) {

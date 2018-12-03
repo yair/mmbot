@@ -37,6 +37,7 @@ function fetch_data (func) {
         balances = null;
 
     exch.get_orderbook (c['market'], function (pbody) {
+
         console.log("got orderbook");
         ob = pbody;
         if (prev_orders != null && balances != null)
@@ -44,13 +45,15 @@ function fetch_data (func) {
     });
 
     exch.get_current_orders (c['market'], function (pbody) {
-        console.log("got current orders: " + pbody);
+
+        console.log("got current orders: " + JSON.stringify (pbody));
         prev_orders = pbody || [];
         if (ob != null && balances != null)
             func (ob, prev_orders, balances);
     });
 
     exch.get_balances (function (pbody) {
+
         console.log("got balances");
         balances = pbody;
         if (ob != null && prev_orders != null)
@@ -60,50 +63,36 @@ function fetch_data (func) {
 
 function calc_new_orders (ob, prev_orders, balances) {
 
-    console.log ("\nob = " + JSON.stringify (ob));
-    ob.subtract (prev_orders);
-    console.log("1");
-    var [midpoint, width] = ob.form(ob, 10000);
+    ob.subtract (ob, prev_orders);
+    var [midpoint, width] = ob.form (ob, c['visible_depth']);
     width *= c['width_compression'];
     if (width < c['min_width']) width = c['min_width'];
     if (width > c['max_width']) width = c['max_width'];
-    console.log("midpoint = " + midpoint + " width = " + width);
     var pdf, cdf;
 
     if (c['distribution'] == 'quadratic-normal') {
-//        pdf = x => Math.sqrt(width/(midpoint*Math.PI)) * x * x * Math.exp(-x*x/2.);
-//        cdf = x => (erf(x)-1.)/2. - Math.sqrt(width/(midpoint*Math.PI)) * x * Math.exp(-x*x/2);
+
         pdf = x => (1. / Math.sqrt (2 * Math.PI)) * x * x * Math.exp (-x*x/2.);
         cdf = x => ((1. + erf (x/Math.sqrt(2.))) / 2.) - x * Math.exp (-x*x/2.) / Math.sqrt (2. * Math.PI)
-    } else throw ("Price distribution " + c['distribution'] + " not supported");
+    } else
+        throw ("Price distribution " + c['distribution'] + " not supported");
 
     var left_to_buy  = balances[c['cash']]  * c['buy_fraction'] / (midpoint + width);
-    console.log ("balances = " + JSON.stringify(balances));
-    console.log ("balances[c['cash']] = balances[" + c['cash'] + "] = " + balances[c['cash']] + " c['buy_fraction'] = " + c['buy_fraction'] + ' left_to_buy = ' + left_to_buy);
-//    const min_buy = left_to_buy * c['min_trade'];
     const min_buy = Math.max (c['min_trade'] / (midpoint + width), left_to_buy / c['max_vol_frac']);
     var left_to_sell = balances[c['asset']] * c['sell_fraction'];
-    console.log ("balances[c['asset']] = balances[" + c['asset'] + "] = " + balances[c['asset']] + " c['sell_fraction'] = " + c['sell_fraction'] + ' left_to_sell = ' + left_to_sell);
     const min_sell = Math.max (c['min_trade'] / midpoint, left_to_sell / c['max_vol_frac']);
-//    const min_sell = left_to_sell * c['min_trade'];
 
-    var orders = [];                                                                                    // min vol on gravi is .5mB, I think.
-    var delme = 0;
+    var orders = [];
     const price_distribution = new PDFSampler (pdf, cdf, 1);
+
     while (true) {
 
-        console.log ((delme++) + ' left_to_buy = ' + left_to_buy + ' left_to_sell = ' + left_to_sell);
-        
         if (left_to_sell < min_sell && left_to_buy < min_buy)
             return orders;
 
         var price = price_distribution.sample();
-//        price = midpoint + price * Math.sqrt (midpoint / (2 * width));
-        console.log("price = " + price + " => " + (midpoint + price * width / Math.sqrt(2.)));
         price = midpoint + price * width / Math.sqrt(2.);
         if (!isFinite (price)) throw ("Invalid price " + price);
-            
-
 
         if (price < midpoint) {
 

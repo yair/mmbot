@@ -1,18 +1,11 @@
 'use strict';
 
-//var SortedArrayMap = require("collections/sorted-array-map");
-//import regression from 'regression';
 const regression = require ('regression');
 
 module.exports = function (asks, bids) {
 
-//    this.asks = SortedArrayMap (asks_map, function (a, b) { return a == b; }, function (a, b) { return a < b; });
-//    this.bids = SortedArrayMap (bids_map, function (a, b) { return a == b; }, function (a, b) { return a > b; });
     this.asks = asks.reverse();
     this.bids = bids;
-//    this.form (limit, cash_value=false) = simple_width (this, limit, cash_value);
-//    this.subtract (that) = ob_subtract (this, that);
-//    this.form = simple_width;
     this.form = parabolic_width;
     this.subtract = ob_subtract;
 	this.max_bid = this.bids[0][0];
@@ -52,31 +45,58 @@ function parabolic_width (ob, limit, cash_value = false) {
     var accum = 0;
     var points = [];
     for (var i = 0; i < ob['bids'].length; i++) {
+
         var [price, amount] = ob['bids'][i];
         accum += parseFloat(cash_value) ? parseFloat(amount) * parseFloat(price) : parseFloat(amount);
         points.push ([price, accum]);
-        if (accum >= limit) {
-            break;
-        }
+        if (accum >= limit) break;
     }
     accum = 0;
     for (var i = 0; i < ob['asks'].length; i++) {
+
         var [price, amount] = ob['asks'][i];
         accum += cash_value ? parseFloat(amount) * parseFloat(price) : parseFloat(amount);
         points.push ([price, accum]);
-        if (accum >= limit) {
-            break;
-        }
+        if (accum >= limit) break;
     }
     const [a, b, c] = regression.polynomial (points, { order: 2 }).equation;
-//    const [a, b, c] = result.equation;
     const midpoint = -b / (2. * a);
     const width = Math.sqrt (b * b  - 4. * a * (c - limit)) / a;
-    console.log ('Parabolic fit -- midpoint = ' + midpoint + ' width = ' + width);
     return [midpoint, width];
 }
 
 function ob_subtract (ob, orders) {
-    // we get agregated orders in the ob, so compare amounts as well.
+
+    outer:
+    for (var oid in orders) {
+
+        if (orders[oid]['side'] == 'sell') {
+
+            inner:
+            for (var obaid in ob['asks']) {
+
+                if (ob['asks'][obaid][0] == orders[oid]['price']) {
+
+                    ob['asks'][obaid][1] -= orders[oid]['volume'];
+                    if (ob['asks'][obaid][1] < 0) throw "ob['asks'][obaid][1] == " + ob['asks'][obaid][1];
+                    continue outer;
+                }
+            }
+            throw "Failed to find our ask in the book: " + orders[oid];
+        } else {
+
+            inner:
+            for (var obbid in ob['bids']) {
+
+                if (ob['bids'][obbid][0] == orders[oid]['price']) {
+
+                    ob['bids'][obbid][1] -= orders[oid]['volume'];
+                    if (ob['bids'][obbid][1] < 0) throw "ob['bids'][obbid][1] == " + ob['bids'][obbid][1];
+                    continue outer;
+                }
+            }
+            throw "Failed to find our bid in the book: " + orders[oid];
+        }
+    }
 }
 

@@ -11,8 +11,6 @@ const secrets = JSON.parse (fs.readFileSync ('graviex_secrets.json')),
       graviex_base_url = 'https://graviex.net',
       graviex_api_path = '/api/v2/';
 
-var   cmdsn = 0;
-
 module.exports = {
 
 	get_orderbook:		function (market, func) { send_authed_get_cmd ('depth.json', '&market=' + market, x => new OB (x['asks'], x['bids']), func); },
@@ -34,12 +32,25 @@ module.exports = {
 }
 
 function sleep (ms) {
+
 	return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function get_tonce () {
+
+    while (fs.existsSync ('/tmp/.graviex_tonce.lock')) sleep (1);
+    fs.writeFileSync ('/tmp/.graviex_tonce.lock');
+    var tonce = Math.max (new Date().getTime(), (parseInt (fs.readFileSync ('/tmp/.graviex_tonce')) || 0)) + 1;
+    console.log ('/tmp/.graviex_tonce reads ' + (parseInt (fs.readFileSync ('/tmp/.graviex_tonce')) || 0) + ' tonce is ' + tonce);
+    fs.writeFileSync ('/tmp/.graviex_tonce', tonce);
+    fs.unlinkSync ('/tmp/.graviex_tonce.lock');
+    return tonce;
 }
 
 async function send_authed_get_cmd(cmd, params, proc, func) {
 
-    var tonce = String (new Date().getTime() + ++cmdsn),
+    var tonce = get_tonce(),
+//    var tonce = new Date().getTime() + ++cmdsn,
         payload = 'GET|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + params + '&tonce=' + tonce,
         hash = crypto.createHmac('sha256', secrets['secret_key']).update(payload).digest('hex'),
         req = graviex_base_url + graviex_api_path + cmd + '?access_key=' + secrets['access_key'] + params + '&tonce=' + tonce + '&signature=' + hash,
@@ -72,7 +83,9 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
 //function send_authed_post_cmd(cmd, id, tonce, proc, func) {
 async function send_authed_post_cmd(cmd, params, proc, func) {
 
-    var tonce = new Date().getTime() + ++cmdsn,
+//    var tonce = String ((new Date().getTime() + 10*(++cmdsn)) % 10 + tonce_offset),
+    var tonce = get_tonce(),
+//    var tonce = new Date().getTime() + ++cmdsn,
 //	var payload = 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&id=' + id + '&tonce=' + tonce,
 	    payload = 'id' in params ? 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&id=' + params['id'] + '&tonce=' + tonce :
                                    'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&market=' + params['market']
@@ -128,7 +141,9 @@ function send_authed_buy_cmds_recursively (orders, func) {
 
 async function send_authed_buy_cmd(cmd, market, side, price, volume, func) {
 
-    var tonce = new Date().getTime() + ++cmdsn,
+    var tonce = get_tonce(),
+//    var tonce = String ((new Date().getTime() + 10*(++cmdsn)) % 10 + tonce_offset),
+//    var tonce = new Date().getTime() + ++cmdsn,
 //      payload = 'POST|' + graviex_api_path + cmd + '|access_key=' + graviex_access_key + '&market=mixbtc&side=buy&volume=' + volume + '&price=' + price + '&tonce=' + tonce,
         payload = 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&market=' + market + '&price=' + price.toFixed(9) + '&side=' + side + '&tonce=' + tonce + '&volume=' + volume.toFixed(4),
         hash = crypto.createHmac('sha256', secrets['secret_key']).update(payload).digest('hex'),
@@ -186,4 +201,3 @@ console.log('hash=' + hash);
             if (func!=null) func(JSON.parse(body));
         });
 }
-

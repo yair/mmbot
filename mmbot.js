@@ -8,11 +8,11 @@ const c = JSON.parse (fs.readFileSync (argv['c']));
 const exch = require ('./' + c['exchange'] + '.js');
 const PDFSampler = require ('./pdf_sampler.js');
 
-go (); //TODO: trigger by timer and/or exchange activity
+go ();
 
 function go() {
 
-	if (c['live'] && Math.random() > 1/c['skip_work']) return;
+	if (c['live'] && Math.random() > 1/c['skip_work']) { return; }
 
     console.log("fetching data");
     fetch_data (function (ob, prev_orders, account_info) {

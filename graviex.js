@@ -30,7 +30,7 @@ async function get_tonce () {
 
     while (fs.existsSync ('/tmp/.graviex_tonce.lock')) await sleep (1);
     fs.writeFileSync ('/tmp/.graviex_tonce.lock');
-    var tonce = Math.max (new Date().getTime(), (parseInt (fs.readFileSync ('/tmp/.graviex_tonce')))) + 1;
+    var tonce = Math.max (new Date().getTime(), (parseInt (fs.readFileSync ('/tmp/.graviex_tonce'))) || 0) + 1;
     fs.writeFileSync ('/tmp/.graviex_tonce', tonce);
     fs.unlinkSync ('/tmp/.graviex_tonce.lock');
     return tonce;
@@ -50,7 +50,7 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
         },
         agent = new https.Agent(agentOptions);
 
-	await sleep (Math.floor (10000 * Math.random ()));
+	await sleep (Math.floor (1000 * Math.random ()));
 
     request({
             url: req,
@@ -80,7 +80,7 @@ async function send_authed_post_cmd(cmd, params, proc, func) {
         },
         agent = new https.Agent(agentOptions);
 
-	await sleep (Math.floor (10000 * Math.random ()));
+	await sleep (Math.floor (30000 * Math.random ()));
 
     request ({
             url: req,
@@ -116,7 +116,7 @@ async function send_authed_buy_cmd (cmd, market, side, price, volume, func) {
         },
         agent = new https.Agent(agentOptions);
 
-	await sleep (Math.floor (10000 * Math.random ()));
+	await sleep (Math.floor (30000 * Math.random ()));
 
     request ({
             url: req,

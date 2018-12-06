@@ -4,13 +4,28 @@ const regression = require ('regression');
 
 module.exports = function (asks, bids) {
 
-    this.asks = asks.reverse();
+    this.asks = asks.reverse ();
     this.bids = bids;
-    this.form = parabolic_width_of_log_price;
+    this.form = width;
     this.subtract = ob_subtract;
 	this.max_bid = this.bids[0][0];
 	this.min_ask = this.asks[0][0];
 };
+
+function width (ob, limit, fit_func = 'log-parabolic', cash_value = false) {
+
+    switch (fit_func) {
+
+        case 'simple':
+            return simple_width (ob, limit, cash_value);
+        case 'parabolic':
+            return parabolic_width (ob, limit, cash_value);
+        case 'log-parabolic':
+            return parabolic_width_of_log_price (ob, limit, cash_value);
+        default:
+            throw ('Unsupported orderbook fitting function ' + fit_func);
+    }
+}
 
 function simple_width (ob, limit, cash_value = false) {
 
@@ -112,7 +127,7 @@ function ob_subtract (ob, orders) {
                     continue outer;
                 }
             }
-            throw "Failed to find our ask in the book: " + orders[oid];
+            throw "Failed to find our ask in the book: " + JSON.stringify (orders[oid]);
         } else {
 
             inner:
@@ -125,7 +140,7 @@ function ob_subtract (ob, orders) {
                     continue outer;
                 }
             }
-            throw "Failed to find our bid in the book: " + orders[oid];
+            throw "Failed to find our bid in the book: " + JSON.stringify (orders[oid]);
         }
     }
 }

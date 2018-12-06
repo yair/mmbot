@@ -64,7 +64,7 @@ function fetch_data (func) {
 function calc_new_orders (ob, prev_orders, balances) {
 
     ob.subtract (ob, prev_orders);
-    var [midpoint, width] = ob.form (ob, c['visible_depth']);
+    var [midpoint, width] = ob.form (ob, c['visible_depth'], c['fit_function']);
     width *= c['width_compression'];
     if (width < c['min_width']) width = c['min_width'];
     if (width > c['max_width']) width = c['max_width'];

@@ -6,11 +6,13 @@
     "distribution": "quadratic-normal",
     "buy_fraction": 0.4,
     "sell_fraction": 0.2,
-    "width_compression": 0.6,
+    "width_compression": 0.25,
     "min_width": 3e-8,
     "max_width": 1e-6,
     "min_trade": 0.0005,
 	"max_vol_frac": 14.3,
 	"live": true,
-	"skip_work": 7
+	"skip_work": 11,
+    "visible_depth": 20000,
+    "fit_function": "log-parabolic"
 }

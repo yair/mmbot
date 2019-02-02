@@ -28,11 +28,23 @@ function sleep (ms) {
 
 async function get_tonce () {
 
+//    console.log ('entered get_tonce');
     while (fs.existsSync ('/tmp/.graviex_tonce.lock')) await sleep (1);
     fs.writeFileSync ('/tmp/.graviex_tonce.lock');
-    var tonce = Math.max (new Date().getTime(), (parseInt (fs.readFileSync ('/tmp/.graviex_tonce'))) || 0) + 1;
+//    console.log ('lock no longer exists, wrote our own.');
+    var current_tonce = 0;
+    if (fs.existsSync('/tmp/.graviex_tonce')) {
+//        console.log ('tonce exists. reading.');
+        current_tonce = parseInt (fs.readFileSync ('/tmp/.graviex_tonce'));
+//        console.log ('tonce read - ' + current_tonce);
+    }
+//  var tonce = Math.max (new Date().getTime(), (,parseInt (fs.readFileSync ('/tmp/.graviex_tonce'))) || 0) + 1;
+    var tonce = Math.max (new Date().getTime(), current_tonce) + 1;
+//    console.log ('new tonce - ' + tonce);
     fs.writeFileSync ('/tmp/.graviex_tonce', tonce);
+//    console.log ('wrote new tonce');
     fs.unlinkSync ('/tmp/.graviex_tonce.lock');
+//    console.log ('unlinked lock');
     return tonce;
 }
 

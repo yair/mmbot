@@ -13,6 +13,7 @@ go ();
 function go() {
 
 	if (c['live'] && Math.random() > 1/c['skip_work']) { return; }
+    // TODO: test if already running and exit too.
 
     console.log("fetching data");
     fetch_data (function (ob, prev_orders, account_info) {

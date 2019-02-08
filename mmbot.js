@@ -4,9 +4,10 @@ const fs = require ('fs');
 const erf = require ('math-erf');
 const request = require ('request');
 
-const u = require ('./utils.js');
 const argv = require('minimist')(process.argv.slice(2));
+const u = require ('./utils.js');
 const c = u.parse_json (fs.readFileSync (argv['c']));
+const l = require ('./logger.js') (c['defaults']['asset']);
 const PDFSampler = require ('./pdf_sampler.js');
 
 try {

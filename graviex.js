@@ -17,8 +17,10 @@ module.exports = {
 	get_current_orders: function (market, func) { send_authed_get_cmd ('orders.json', '&market=' + market, x => x, func); },
 	get_balances:		function (func) { send_authed_get_cmd ('members/me.json', '', x => x['accounts'].reduce ((o,m) => (o[m['currency']]=m['balance'],o), {}), func);},
 
-    delete_orders:      function (orders, func) { orders.map (o => send_authed_post_cmd ('order/delete.json', o, x => x, func)) },
-    issue_orders:       function (orders, func) { orders.map (o => send_authed_buy_cmd ('orders.json', o['market'], o['side'], o['price'], o['volume'], func)); },
+    delete_orders:      function (orders, delay, func) { orders.map (o =>
+                                                            send_authed_post_cmd ('order/delete.json', o, delay, x => x, func)) },
+    issue_orders:       function (orders, delay, func) { orders.map (o =>
+                                                            send_authed_buy_cmd ('orders.json', o['market'], o['side'], o['price'], o['volume'], delay, func)); },
 }
 
 function sleep (ms) {
@@ -75,9 +77,9 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
     });
 }
 
-async function send_authed_post_cmd(cmd, params, proc, func) {
+async function send_authed_post_cmd(cmd, params, delay, proc, func) {
 
-	await sleep (Math.floor (30000 * Math.random ()));
+	await sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
 
     var tonce = await get_tonce(),
 	    payload = 'id' in params ? 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&id=' + params['id'] + '&tonce=' + tonce :
@@ -114,9 +116,9 @@ async function send_authed_post_cmd(cmd, params, proc, func) {
 	});
 }
 
-async function send_authed_buy_cmd (cmd, market, side, price, volume, func) {
+async function send_authed_buy_cmd (cmd, market, side, price, volume, delay, func) {
 
-	await sleep (Math.floor (30000 * Math.random ()));
+	await sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
 
     var tonce = await get_tonce(),
         payload = 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&market=' + market + '&price=' + price.toFixed(9) + '&side=' + side + '&tonce=' + tonce + '&volume=' + volume.toFixed(4),

@@ -1,18 +1,49 @@
 {
-    "exchange":"graviex",
-    "market": "mixbtc",
-    "asset": "mix",
-    "cash": "btc",
     "distribution": "quadratic-normal",
-    "buy_fraction": 0.4,
-    "sell_fraction": 0.2,
-    "width_compression": 0.25,
+    "width_compression": 0.2,
     "min_width": 3e-8,
     "max_width": 1e-6,
-    "min_trade": 0.0005,
-	"max_vol_frac": 14.3,
-	"live": true,
-	"skip_work": 11,
-    "visible_depth": 20000,
-    "fit_function": "log-parabolic"
+    "global_base": "btc",
+    "live": false,
+    "skip_work": 1,
+    "visible_depth": 300000,
+    "fit_function": "log-parabolic",
+    "lock_file": "/tmp/mmbot.lock",
+
+    "defaults": {
+        "buy_fraction": 0.3,
+        "sell_fraction": 0.15,
+        "asset": "mix",
+        "max_vol_frac": 14.3,
+        "live": false,
+        "cmd_delay": 30
+    },
+
+    "markets": [
+        {
+            "name": "graviex-mixbtc",
+            "exchange": "graviex",
+            "market": "mixbtc",
+            "base": "btc",
+            "min_trade": 0.0005
+        },
+        {
+            "name": "graviex-mixeth",
+            "exchange":"graviex",
+            "market": "mixeth",
+            "base": "eth",
+            "min_trade": 0.025
+        },
+        {
+            "name": "stex-mixeth",
+            "exchange":"stex",
+            "market": "mixeth",
+            "base": "eth",
+            "sell_fraction": 0.01,
+            "buy_fraction": 0.01,
+            "min_trade": 0.00001,
+            "live": true
+
+        }
+    ]
 }

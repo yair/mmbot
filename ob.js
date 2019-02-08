@@ -2,6 +2,8 @@
 
 const regression = require ('regression');
 
+const u = require ('./utils.js');
+
 module.exports = function (asks, bids, reverse_asks = true) {
 
     this.asks = reverse_asks ? asks.reverse () : asks;
@@ -114,7 +116,12 @@ function parabolic_width (ob, limit, cash_value = false) {
     return [midpoint, width];
 }
 
-function ob_subtract (ob, orders) {
+function ob_subtract (ob, o) {
+
+    if (typeof(o) == "undefined" || o == null || o.length == 0)
+        return;
+
+    var orders = u.parse_json (JSON.stringify (o));
 
     outer:
     for (var oid in orders) {
@@ -127,6 +134,7 @@ function ob_subtract (ob, orders) {
                 if (ob['asks'][obaid][0] == orders[oid]['price']) {
 
                     ob['asks'][obaid][1] -= orders[oid]['remaining_volume'];
+                    orders[oid]['remaining_volume'] = 0;
                     if (ob['asks'][obaid][1] < 0) console.error ("ERROR: ob['asks'][obaid][1] == " + ob['asks'][obaid][1]);
                     continue outer;
                 }
@@ -140,11 +148,20 @@ function ob_subtract (ob, orders) {
                 if (ob['bids'][obbid][0] == orders[oid]['price']) {
 
                     ob['bids'][obbid][1] -= orders[oid]['remaining_volume'];
+                    orders[oid]['remaining_volume'] = 0;
                     if (ob['bids'][obbid][1] < 0) console.error ("ERROR: ob['bids'][obbid][1] == " + ob['bids'][obbid][1]);
                     continue outer;
                 }
             }
             throw "Failed to find our bid in the book: " + JSON.stringify (orders[oid]);
+        }
+    }
+    
+    for (var oid in orders) {
+
+        if (orders[oid]['remaining_volume'] != 0) {
+
+            throw "Failed to subtract order from ob: " + JSON.stringify (orders[oid]);
         }
     }
 }

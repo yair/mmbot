@@ -1,9 +1,10 @@
 'use strict';
 
 const fs = require ('fs'),
+      u  = require ('./utils.js'),
       OB = require ('./ob.js'),
 	  stex = require('stocks-exchange-client'),
-      option = JSON.parse (fs.readFileSync ('stex_secrets.json')),
+      option = u.parse_json (fs.readFileSync ('stex_secrets.json')),
 	  sc = new stex.client (option);
 
 module.exports = {
@@ -17,12 +18,12 @@ module.exports = {
 //	get_balances:		function (func) { send_authed_get_cmd ('members/me.json', '', x => x['accounts'].reduce ((o,m) => (o[m['currency']]=m['balance'],o), {}), func);},
 
     delete_orders:      function (orders, delay, func) { orders.map (async (o) => {
-                            await sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
+                            await u.sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
                             sc.cancelOrder (o['id'], function (res) { func (res) })
                         }) },
 //    delete_orders:      function (orders, func) { orders.map (o => send_authed_post_cmd ('order/delete.json', o, x => x, func)) },
     issue_orders:       function (orders, delay, func) { orders.map (async (o) => {
-                            await sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
+                            await u.sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
                             sc.trade ({ 'type': o['side'], 'pair': mn (o['market']), 'amount': o['volume'], 'rate': o['price'] }, function (res) { func (res) })
                         }) },
                                                                                
@@ -33,7 +34,7 @@ module.exports = {
 
 function ba_parse (res) {
 
-    var resp = JSON.parse (res);
+    var resp = u.parse_json (res);
     console.log ("ba_parse resp = " + JSON.stringify (resp));
     console.log ("ba_parse: resp['data']['hold_funds']['MIX'] = " + resp['data']['hold_funds']['MIX']);
 /* { "success": 1, "data": { "email": "some_email@gmail.com", "username":"some_username", "userSessions": [{"ip":"46.164.189.25", "date":"2016-06-29 15:41:21", "created_at":"2016-06-28 20:30:28", "active":false}], funds": {"NXT": "8", "BTC": "0.018"}, hold_funds": { "NXT": "18", "BTC": "0"}, */
@@ -49,7 +50,7 @@ function ba_parse (res) {
 
 function co_parse (res) {
 
-    var resp = JSON.parse (res);
+    var resp = u.parse_json (res);
 // "_prev_orders": "{\"success\":1,\"data\":{\"51701807\":{\"pair\":\"MIX_ETH\",\"type\":\"sell\",\"amount\":\"25000\",\"rate\":\"0.000028\",\"is_your_order\":0,\"timestamp\":1549122882},\"51701844\":{\"pair\":\"MIX_ETH\",\"type\":\"sell\",\"amount\":\"25000\",\"rate\":\"0.000029\",\"is_your_order\":0,\"timestamp\":1549122887},
 /*    "_prev_orders": [
       {
@@ -78,7 +79,7 @@ function co_parse (res) {
 
 function ob_parse (res) {
 
-    var resp = JSON.parse (res);
+    var resp = u.parse_json (res);
     return new OB (resp['result']['sell'].map (x => [x['Rate'], x['Quantity']]),
                    resp['result']['buy' ].map (x => [x['Rate'], x['Quantity']]), false);
 }
@@ -107,15 +108,10 @@ function rmn (sname) {
     throw new Error ('Cannot translate market name "' + sname + '" from stex naming convention: ' + JSON.stringify (c));
 }
 
-function sleep (ms) {
-
-	return new Promise (resolve => setTimeout (resolve, ms));
-}
-
 async function get_tonce () {
 
 //    console.log ('entered get_tonce');
-    while (fs.existsSync ('/tmp/.graviex_tonce.lock')) await sleep (1);
+    while (fs.existsSync ('/tmp/.graviex_tonce.lock')) await u.sleep (1);
     fs.writeFileSync ('/tmp/.graviex_tonce.lock');
 //    console.log ('lock no longer exists, wrote our own.');
     var current_tonce = 0;
@@ -136,7 +132,7 @@ async function get_tonce () {
 
 async function send_authed_get_cmd(cmd, params, proc, func) {
 
-	await sleep (Math.floor (1000 * Math.random ()));
+	await u.sleep (Math.floor (1000 * Math.random ()));
 
     var tonce = await get_tonce(),
         payload = 'GET|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + params + '&tonce=' + tonce,
@@ -157,13 +153,13 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
         }, function (err, resp, body) {
 
         if (err) throw('Error sending get cmd ' + cmd + ': ' + err);
-        if (func != null) func (proc (JSON.parse(body)));
+        if (func != null) func (proc (u.parse_json (body)));
     });
 }
 
 async function send_authed_post_cmd(cmd, params, proc, func) {
 
-	await sleep (Math.floor (30000 * Math.random ()));
+	await u.sleep (Math.floor (30000 * Math.random ()));
 
     var tonce = await get_tonce(),
 	    payload = 'id' in params ? 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&id=' + params['id'] + '&tonce=' + tonce :
@@ -196,13 +192,13 @@ async function send_authed_post_cmd(cmd, params, proc, func) {
         if (resp['statusCode'] == 405)
             throw ("405 method not allowed:\nbody=" + body + "\nerr=" + err + "\nresp=" + JSON.stringify(resp) + "\ncmd=" + cmd + "\nparams=" + JSON.stringify(params));
 		if (err) throw ('Error sending post cmd ' + cmd + ': ' + err);
-        if (func != null) func (proc (JSON.parse(body)));
+        if (func != null) func (proc (u.parse_json(body)));
 	});
 }
 
 async function send_authed_buy_cmd (cmd, market, side, price, volume, func) {
 
-	await sleep (Math.floor (30000 * Math.random ()));
+	await u.sleep (Math.floor (30000 * Math.random ()));
 
     var tonce = await get_tonce(),
         payload = 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&market=' + market + '&price=' + price.toFixed(9) + '&side=' + side + '&tonce=' + tonce + '&volume=' + volume.toFixed(4),
@@ -232,6 +228,6 @@ async function send_authed_buy_cmd (cmd, market, side, price, volume, func) {
         }, function (err, resp, body) {
 
         if (err) throw ('Error sending post cmd ' + cmd + ': ' + err);
-        if (func != null) func (JSON.parse(body));
+        if (func != null) func (u.parse_json (body));
     });
 }

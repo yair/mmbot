@@ -5,9 +5,10 @@ const fs = require ('fs'),
       request = require('request'),
       https = require('https');
 
-const OB = require ('./ob.js');
+const OB = require ('./ob.js'),
+      u  = require ('./utils.js');
 
-const secrets = JSON.parse (fs.readFileSync ('graviex_secrets.json')),
+const secrets = u.parse_json (fs.readFileSync ('graviex_secrets.json')),
       graviex_base_url = 'https://graviex.net',
       graviex_api_path = '/api/v2/';
 
@@ -23,15 +24,10 @@ module.exports = {
                                                             send_authed_buy_cmd ('orders.json', o['market'], o['side'], o['price'], o['volume'], delay, func)); },
 }
 
-function sleep (ms) {
-
-	return new Promise (resolve => setTimeout (resolve, ms));
-}
-
 async function get_tonce () {
 
 //    console.log ('entered get_tonce');
-    while (fs.existsSync ('/tmp/.graviex_tonce.lock')) await sleep (1);
+    while (fs.existsSync ('/tmp/.graviex_tonce.lock')) await u.sleep (1);
     fs.writeFileSync ('/tmp/.graviex_tonce.lock');
 //    console.log ('lock no longer exists, wrote our own.');
     var current_tonce = 0;
@@ -52,7 +48,7 @@ async function get_tonce () {
 
 async function send_authed_get_cmd(cmd, params, proc, func) {
 
-	await sleep (Math.floor (1000 * Math.random ()));
+	await u.sleep (Math.floor (1000 * Math.random ()));
 
     var tonce = await get_tonce(),
         payload = 'GET|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + params + '&tonce=' + tonce,
@@ -73,13 +69,13 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
         }, function (err, resp, body) {
 
         if (err) throw('Error sending get cmd ' + cmd + ': ' + err);
-        if (func != null) func (proc (JSON.parse(body)));
+        if (func != null) func (proc (u.parse_json(body)));
     });
 }
 
 async function send_authed_post_cmd(cmd, params, delay, proc, func) {
 
-	await sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
+	await u.sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
 
     var tonce = await get_tonce(),
 	    payload = 'id' in params ? 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&id=' + params['id'] + '&tonce=' + tonce :
@@ -112,13 +108,13 @@ async function send_authed_post_cmd(cmd, params, delay, proc, func) {
         if (resp['statusCode'] == 405)
             throw ("405 method not allowed:\nbody=" + body + "\nerr=" + err + "\nresp=" + JSON.stringify(resp) + "\ncmd=" + cmd + "\nparams=" + JSON.stringify(params));
 		if (err) throw ('Error sending post cmd ' + cmd + ': ' + err);
-        if (func != null) func (proc (JSON.parse(body)));
+        if (func != null) func (proc (u.parse_json(body)));
 	});
 }
 
 async function send_authed_buy_cmd (cmd, market, side, price, volume, delay, func) {
 
-	await sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
+	await u.sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
 
     var tonce = await get_tonce(),
         payload = 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&market=' + market + '&price=' + price.toFixed(9) + '&side=' + side + '&tonce=' + tonce + '&volume=' + volume.toFixed(4),
@@ -148,6 +144,6 @@ async function send_authed_buy_cmd (cmd, market, side, price, volume, delay, fun
         }, function (err, resp, body) {
 
         if (err) throw ('Error sending post cmd ' + cmd + ': ' + err);
-        if (func != null) func (JSON.parse(body));
+        if (func != null) func (u.parse_json(body));
     });
 }

@@ -4,8 +4,9 @@ const fs = require ('fs');
 const erf = require ('math-erf');
 const request = require ('request');
 
+const u = require ('./utils.js');
 const argv = require('minimist')(process.argv.slice(2));
-const c = JSON.parse (fs.readFileSync (argv['c']));
+const c = u.parse_json (fs.readFileSync (argv['c']));
 const PDFSampler = require ('./pdf_sampler.js');
 
 try {
@@ -239,7 +240,7 @@ function fetch_data (func) {
             function (err, resp, body) {
 
                 if (err) console.log ("Error: ", err);
-                c['_bexchrs'][base] = JSON.parse (body)[c['global_base'].toUpperCase()];
+                c['_bexchrs'][base] = u.parse_json (body)[c['global_base'].toUpperCase()];
                 console.log ("fetch_data - got exchange rate for " + base + " - " + c['_bexchrs'][base] + " (body="+body+")");
 
 

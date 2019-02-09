@@ -23,17 +23,13 @@ function go() {
 
     l.info ("Shitcoin liquifier up and running.");
     bind_handlers_and_lock ();
-
     apply_market_defaults ();
     instantiate_exchanges ();
-
-//	if (c['live'] && Math.random() > 1/c['skip_work']) { return; }
-    // TODO: test if already running and exit too.
 
     l.info ("Fetching data");
     fetch_data (function () {
 
-        const cob/*, prev_orders, balances*/ = consolidate_fetched_data ();
+        const cob = consolidate_orderbooks ();
 
         l.info ("Data fetched. Generating price distribution.");
 
@@ -45,14 +41,6 @@ function go() {
             show_summary (pdist);
         });
     });
-/*
-		if (c['live']) {
-	        console.log("new orders calced. Replacing orders");
-	        exch.delete_orders (prev_orders, (pbody) => console.log ("order deleted: " + JSON.stringify(pbody)));
-	        exch.issue_orders (new_orders, (pbody) => console.log ("new limit order issued: " + JSON.stringify(pbody)));
-		} else
-			console.log("Would be order deletions: " + JSON.stringify (prev_orders) + "\nWould be new orders: " + JSON.stringify (new_orders));
-    });*/
 }
 
 function replace_orders (func) {
@@ -63,14 +51,11 @@ function replace_orders (func) {
 
         if (c['live'] && m['live']) {
 
-	        m['_exch'].delete_orders (m['_prev_orders'], m['cmd_delay'], (pbody) => console.log ("order deleted in " + m['name'] + ": " + JSON.stringify(pbody)));
-	        m['_exch'].issue_orders (m['_new_orders'], m['cmd_delay'], (pbody) => console.log ("new limit order in " + m['name'] + " issued: " + JSON.stringify(pbody)));
+	        m['_exch'].delete_orders (m['_prev_orders'], m['cmd_delay'], (pbody) => l.info ("order deleted in " + m['name'] + ": " + JSON.stringify(pbody)));
+	        m['_exch'].issue_orders (m['_new_orders'], m['cmd_delay'], (pbody) => l.info ("new limit order in " + m['name'] + " issued: " + JSON.stringify(pbody)));
         } else {
 
             l.warn ("\nMarket is dead. Not removing or issuing orders.\n");
-//            l.info ("\nMarket is dead. Would have removed the following orders in " + m['name'] + " :\n" + JSON.stringify (m['_prev_orders']));
-//            l.info ("\nMarket is dead. Would have issued the following orders in "  + m['name'] + " :\n" + JSON.stringify (m['_new_orders']));
-//            console.log ("\n" + m['name'] + ' dump -- ' + JSON.stringify (m));
         }
         l.debug ("\nFull dump of " + m['name'] + ":\n" + JSON.stringify (m));
     }
@@ -142,9 +127,7 @@ function exit_handler (e) {
     if (fs.existsSync (c['lock_file'])) fs.unlinkSync (c['lock_file']);
     if (e != null && isNaN (e)) { 
         l.error (e);
-//        process.exit (1);
     }
-//    process.exit (0);
 }
 
 function bind_handlers_and_lock () {
@@ -193,7 +176,7 @@ function data_fetched () {
         if (c['_bexchrs'][base] == 0) return false;
     }
 
-    l.debug ("\ndata_fetched returning true. base exchange rate are: " + JSON.stringify (c['_bexchrs'], null, 2) + "\n");
+    l.debug ("data_fetched returning true. base exchange rate are: " + JSON.stringify (c['_bexchrs'], null, 2) + "");
     return true;
 }
 
@@ -257,22 +240,16 @@ function normalized_ob (m) {
 
         l.debug ("(m['base'] = " + m['base'] + ", c['global_base'] = " + c['global_base'] + ". Skipping normalization.");
         return m['_ob'];
-//        m['_ob_n'] = m['_ob'];
-//        m['_prev_orders_n'] = m['_prev_orders'];
-//        m['_balances_n'] = m['_balances'];
     }
 
     l.debug ("(m['base'] = " + m['base'] + ", c['global_base'] = " + c['global_base'] + ". Normalizing.");
 
     return m['_ob'].normalized_copy (m['_ob'], c['_bexchrs'][m['base']]);
-
-// {"id":18702933,"at":1549105591,"side":"sell","ord_type":"limit","price":"0.000017331","avg_price":"0.0","state":"wait","market":"mixeth","created_at":"2019-02-02T11:06:31Z","volume":"1697.8911","remaining_volume":"1697.8911","executed_volume":"0.0","trades_count":0}
-// {"id":18702936,"at":1549105592,"side":"buy","ord_type":"limit","price":"0.000013357","avg_price":"0.0","state":"wait","market":"mixeth","created_at":"2019-02-02T11:06:32Z","volume":"79287.4587","remaining_volume":"79287.4587","executed_volume":"0.0","trades_count":0}
 }
 
-function consolidate_fetched_data () {
+function consolidate_orderbooks () {
 
-    var obs = []/*, cob, prev_orders, balances*/;
+    var obs = [];
 
     l.silly ("in consolidate: markets = " + JSON.stringify (c['markets'], null, 2));
 
@@ -290,14 +267,12 @@ function consolidate_fetched_data () {
 
     l.silly ('obs = ' + JSON.stringify (obs, null, 2));
     const cob = c['markets'][0]['_ob'].merge_obs (obs); //TODO: should be static
-    l.info ('combined ob form = ' + JSON.stringify (cob.form (cob, 300000, c['fit_function'])));
+    l.info ('combined ob 300k form = ' + JSON.stringify (cob.form (cob, 300000, c['fit_function'])));
     return cob;
 }
 
-//function calc_new_orders (ob, prev_orders, balances) {
 function generate_price_distribution (cob) {
 
-//    ob.subtract (ob, prev_orders);
     var [midpoint, width] = cob.form (cob, c['visible_depth'], c['fit_function']);
     width *= c['width_compression'];
     if (width < c['min_width']) width = c['min_width'];
@@ -329,18 +304,17 @@ function sample_new_orders (pdist) {
         }
         
         l.debug ("\nSampling orders for " + m['name']);
-//        console.log (m['name'] + 'balances - ' + JSON.stringify (m['_balances']));
         l.debug (m['name'] + ' ' + m['base']  + ' balances - ' + JSON.stringify (m['_balances'][m['base']]));
         l.debug (m['name'] + ' ' + m['asset'] + ' balances - ' + JSON.stringify (m['_balances'][m['asset']]));
-//        l.debug (m['name'] + ' btc balances - ' + JSON.stringify (m['_balances']['btc']));
-//        l.debug (m['name'] + ' eth balances - ' + JSON.stringify (m['_balances']['eth']));
-//        l.debug (m['name'] + ' mix balances - ' + JSON.stringify (m['_balances']['mix']));
+
         var left_to_buy  = m['_balances'][m['base']]  * m['buy_fraction'] / (midpoint + width);
         const min_buy = Math.max (m['min_trade'] / (midpoint + width), left_to_buy / m['max_vol_frac']);
-        l.debug ('Init - left_to_buy = ' + left_to_buy + ' and min_buy = ' + min_buy);
+        l.debug ('Init - left_to_buy = ' + left_to_buy + ' and min_buy = ' + min_buy + ' buy fraction ' + m['buy_fraction']);
+
         var left_to_sell = m['_balances'][m['asset']] * m['sell_fraction'];
         const min_sell = Math.max (m['min_trade'] / midpoint, left_to_sell / m['max_vol_frac']);
-        l.debug ('Init - left_to_sell = ' + left_to_sell + ' and min_sell = ' + min_sell + ' mix balance ' + m['_balances'][m['asset']] + ' sell fraction ' + m['sell_fraction']);
+        l.debug ('Init - left_to_sell = ' + left_to_sell + ' and min_sell = ' + min_sell + ' sell fraction ' + m['sell_fraction']);
+
         l.debug ('m[_ob].min_ask = ' + m['_ob'].min_ask);
         l.debug ('m[_ob].max_bid = ' + m['_ob'].max_bid);
         m['_new_orders'] = [];
@@ -369,7 +343,7 @@ function sample_new_orders (pdist) {
 
                 left_to_buy -= volume;
                 l.debug ('pushing a buy order at ' + price + ', volume = ' + volume + ' and ' + left_to_buy + ' left to buy.');
-                m['_new_orders'].push (abnormalize_order (m, {'side': 'buy', 'price': price, 'volume': volume, 'market': m['market']}));
+                m['_new_orders'].push ({'side': 'buy', 'price': price, 'volume': volume, 'market': m['market']});
             } else {
 
                 if (left_to_sell < min_sell) continue;
@@ -385,56 +359,9 @@ function sample_new_orders (pdist) {
 
                 left_to_sell -= volume;
                 l.debug ('pushing a sell order at ' + price + ', volume = ' + volume + ' and ' + left_to_sell + ' left to sell.');
-                m['_new_orders'].push (abnormalize_order (m, {'side': 'sell', 'price': price, 'volume': volume, 'market': m['market']}));
+                m['_new_orders'].push ({'side': 'sell', 'price': price, 'volume': volume, 'market': m['market']});
             }
         }
     }
-
-//    console.log ("in sample_new_orders");
-
-    /*
-    while (true) {
-
-        if (left_to_sell < min_sell && left_to_buy < min_buy)
-            return orders;
-
-        var price = price_distribution.sample();
-        price = midpoint + price * width / Math.sqrt(2.);
-        if (!isFinite (price)) throw ("Invalid price " + price);
-
-        if (price < midpoint) {
-
-            if (left_to_buy < min_buy) continue;
-			if (price > ob.min_ask) continue;
-
-            var volume = min_buy / (1 - Math.random());         // https://arxiv.org/pdf/cond-mat/0102518.pdf (empirical, after integration and inversion)
-            if (volume > left_to_buy)
-                volume = left_to_buy; // continue;	 // <= too many orders?
-
-            left_to_buy -= volume;
-            orders.push ({'side': 'buy', 'price': price, 'volume': volume, 'market': c['market']});
-        } else {
-
-            if (left_to_sell < min_sell) continue;
-			if (price < ob.max_bid) continue;
-
-            var volume = min_sell / (1 - Math.random());
-            if (volume > left_to_sell)
-                volume = left_to_sell; // continue;
-
-            left_to_sell -= volume;
-            orders.push ({'side': 'sell', 'price': price, 'volume': volume, 'market': c['market']});
-        }
-    }
-    return orders;*/
 }
 
-function abnormalize_order (m, o) {
-
-/*    if (m['base'] != c['global_base']) {
-
-        o['price'] /= c['_bexchrs'][m['base']];
-    }*/
-
-    return o;
-}

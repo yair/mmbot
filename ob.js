@@ -169,39 +169,14 @@ function ob_subtract (ob, o) {
 
 function normalized_copy (ob, exchr) {
 
-//    console.log (JSON.stringify (ob, null, 2));
-/*
-    // ob = {"asks":[["0.000000381","4278.6721"],["0.000000391","4053.5996"]
-    var rob = JSON.parse (JSON.stringify (ob));
-    rob['asks'] = rob['bids'] = [];
-    for (var i = 0; i < ob['asks'].length; i++) {
-        rob['asks'].push ([ob['asks'][i][0] * exchr, ob['asks'][i][1]]);
-    }
-    for (var i = 0; i < ob['bids'].length; i++) {
-        rob['bids'].push ([ob['bids'][i][0] * exchr, ob['bids'][i][1]]);
-    }*/
     var asks = ob['asks'].map (([x, y]) => ([parseFloat (x) * parseFloat (exchr), parseFloat (y)]));
     var bids = ob['bids'].map (([x, y]) => ([parseFloat (x) * parseFloat (exchr), parseFloat (y)]));
+
     return new module.exports (asks, bids, false);
 }
 
 function merge_obs (obs) {
-/*
-    var asks = [], bids = [];
 
-    for (let obid in obs) {
-        var ob = obs[obid];
-//        console.log ("Current ob: " + JSON.stringify (ob, null, 2));
-        for (var i = 0; i < ob['asks'].length; i++) {
-            asks.push (ob['asks'][i]);
-        }
-        for (var i = 0; i < ob['bids'].length; i++) {
-            bids.push (ob['bids'][i]);
-        }
-    }
-
-    var results = Array.prototype.concat.apply([], a.map(function(doc) { return doc.array; }));*/
-    
     var asks = Array.prototype.concat.apply ([], obs.map (ob => ob['asks']));
     var bids = Array.prototype.concat.apply ([], obs.map (ob => ob['bids']));
     asks.sort((a,b) => (a[0] > b[0]) ? 1 : ((a[0] < b[0]) ? -1 : 0));
@@ -211,5 +186,6 @@ function merge_obs (obs) {
     l.silly ('Combined bids = ' + JSON.stringify (bids));
     const cob = new module.exports (asks, bids, false);
     l.silly ('merge_obs: combined ob form = ' + JSON.stringify (cob.form (cob, 300000, "log-parabolic")));
+
     return cob;
 }

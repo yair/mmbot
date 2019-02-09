@@ -2,6 +2,8 @@
 
 // Algo from https://sciencehouse.wordpress.com/2015/06/20/sampling-from-a-probability-distribution/
 
+const l = require ('winston');
+
 module.exports = function (pdf, cdf, guess, tolerance=1e-8) {
 
     this.pdf = pdf;

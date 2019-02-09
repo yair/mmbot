@@ -9,7 +9,7 @@ module.exports = {
         } catch (e)  {
 
             const l = require ('winston');
-            console.log ("\nJSON parsing failed.\nString was: " + s + "\nError was: " + JSON.stringify (e))
+            l.error ("\nJSON parsing failed.\nString was: " + s + "\nError was: " + JSON.stringify (e))
             throw e
         }
         return r;

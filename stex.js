@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require ('fs'),
+      l = require ('winston'),
       u  = require ('./utils.js'),
       OB = require ('./ob.js'),
 	  stex = require('stocks-exchange-client'),
@@ -35,8 +36,8 @@ module.exports = {
 function ba_parse (res) {
 
     var resp = u.parse_json (res);
-    console.log ("ba_parse resp = " + JSON.stringify (resp));
-    console.log ("ba_parse: resp['data']['hold_funds']['MIX'] = " + resp['data']['hold_funds']['MIX']);
+    l.debug ("ba_parse resp = " + JSON.stringify (resp));
+    l.debug ("ba_parse: resp['data']['hold_funds']['MIX'] = " + resp['data']['hold_funds']['MIX']);
 /* { "success": 1, "data": { "email": "some_email@gmail.com", "username":"some_username", "userSessions": [{"ip":"46.164.189.25", "date":"2016-06-29 15:41:21", "created_at":"2016-06-28 20:30:28", "active":false}], funds": {"NXT": "8", "BTC": "0.018"}, hold_funds": { "NXT": "18", "BTC": "0"}, */
 
 //    return Object.keys (resp['data']['funds']).map ( x => ({[x.toLowerCase()]: resp['data']['funds'][x]}));
@@ -86,7 +87,7 @@ function ob_parse (res) {
 
 function mn (market) {  // fugly, might need an api change
     var c = /^(.*)eth$/.exec (market);
-    console.log ("market=" + market + " c=" + JSON.stringify (c));
+    l.debug ("market=" + market + " c=" + JSON.stringify (c));
 //    if (c.length > 0) {
     if (c != null) {
         return c[1].toUpperCase() + '_ETH';

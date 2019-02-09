@@ -13,33 +13,35 @@ const PDFSampler = require ('./pdf_sampler.js');
 try {
     go ();
 } catch (e) {
-    console.log (e);
+    l.error (e);
+    throw (e);
 }
 
 function go() {
 
     if (!feel_like_running ()) { return; }
+
+    l.info ("Shitcoin liquifier up and running.");
     bind_handlers_and_lock ();
 
     apply_market_defaults ();
-    console.log ("1");
     instantiate_exchanges ();
-    console.log ("2");
 
 //	if (c['live'] && Math.random() > 1/c['skip_work']) { return; }
     // TODO: test if already running and exit too.
 
-    console.log("fetching data");
+    l.info ("Fetching data");
     fetch_data (function () {
 
         const cob/*, prev_orders, balances*/ = consolidate_fetched_data ();
 
-        console.log("data fetched. calcing new orders.");
+        l.info ("Data fetched. Generating price distribution.");
 
         const pdist = generate_price_distribution (cob);
         sample_new_orders (pdist);
 
         replace_orders ( function () {
+
             show_summary (pdist);
         });
     });
@@ -65,12 +67,12 @@ function replace_orders (func) {
 	        m['_exch'].issue_orders (m['_new_orders'], m['cmd_delay'], (pbody) => console.log ("new limit order in " + m['name'] + " issued: " + JSON.stringify(pbody)));
         } else {
 
-//            console.log ("\nWould have removed the following orders in " + m['name'] + " :\n" + m['_prev_orders'].map (x => console.log (JSON.stringify (x))));
-//            console.log ("\nWould have issued the following orders in "  + m['name'] + " :\n" + m['_new_orders'].map  (x => console.log (JSON.stringify (x))));
-            console.log ("\nWould have removed the following orders in " + m['name'] + " :\n" + JSON.stringify (m['_prev_orders']));
-            console.log ("\nWould have issued the following orders in "  + m['name'] + " :\n" + JSON.stringify (m['_new_orders']));
+            l.warn ("\nMarket is dead. Not removing or issuing orders.\n");
+//            l.info ("\nMarket is dead. Would have removed the following orders in " + m['name'] + " :\n" + JSON.stringify (m['_prev_orders']));
+//            l.info ("\nMarket is dead. Would have issued the following orders in "  + m['name'] + " :\n" + JSON.stringify (m['_new_orders']));
 //            console.log ("\n" + m['name'] + ' dump -- ' + JSON.stringify (m));
         }
+        l.debug ("\nFull dump of " + m['name'] + ":\n" + JSON.stringify (m));
     }
     func ();
 }
@@ -84,9 +86,9 @@ function show_summary (pdist) {
 
         let m = c['markets'][min];
 
-        console.log ('\nSummary for ' + m['name'] + ' --');
-        console.log ('Total ' + m['base'] + ' - ' + m['_balances'][m['base']]);
-        console.log ('Total ' + m['asset'] + ' - ' + m['_balances'][m['asset']]);
+        l.info ('\nSummary for ' + m['name'] + ' --');
+        l.info ('Total ' + m['base'] + ' - ' + m['_balances'][m['base']]);
+        l.info ('Total ' + m['asset'] + ' - ' + m['_balances'][m['asset']]);
         if (m['base'] in tots) {
             tots[m['base']] += parseFloat (m['_balances'][m['base']]);
         } else {
@@ -102,7 +104,7 @@ function show_summary (pdist) {
         asset = m['asset'];
     }
 
-    console.log ("");
+    l.info ("");
 
     for (let tin in Object.keys (tots)) {
 
@@ -119,10 +121,10 @@ function show_summary (pdist) {
         }
         gt += base_value;
 
-        console.log ("total " + t + " = " + tots[t] + ' (= ' + base_value + c['global_base'] + ')');
+        l.info ("total " + t + " = " + tots[t] + ' (= ' + base_value + c['global_base'] + ')');
     }
 
-    console.log ('Grand total: ' + gt + c['global_base'] + ' (=' + (gt / base_midpoint) + asset + ')');
+    l.info ('Grand total: ' + gt + c['global_base'] + ' (=' + (gt / base_midpoint) + asset + ')');
 }
 
 function feel_like_running () {
@@ -138,15 +140,15 @@ function feel_like_running () {
 function exit_handler (e) {
 
     if (fs.existsSync (c['lock_file'])) fs.unlinkSync (c['lock_file']);
-    if (e != null) { 
-        console.log (e);
-        process.exit (1);
+    if (e != null && isNaN (e)) { 
+        l.error (e);
+//        process.exit (1);
     }
-    process.exit (0);
+//    process.exit (0);
 }
 
 function bind_handlers_and_lock () {
-//return;
+
     process.on('exit', exit_handler.bind(null));
     process.on('SIGINT', exit_handler.bind(null));
     process.on('SIGUSR1', exit_handler.bind(null));
@@ -159,7 +161,7 @@ function bind_handlers_and_lock () {
 function apply_market_defaults () {
 
     for (var def in c['defaults']) {
-        console.log ('applying ' + def + ' default');
+        l.debug ('applying ' + def + ' default');
         for (var market in c['markets']) {
             if (!(def in c['markets'][market])) {
 
@@ -190,7 +192,8 @@ function data_fetched () {
 
         if (c['_bexchrs'][base] == 0) return false;
     }
-    console.log ("\ndata_fetched returning true. base exchange rate are: " + JSON.stringify (c['_bexchrs'], null, 2) + "\n");
+
+    l.debug ("\ndata_fetched returning true. base exchange rate are: " + JSON.stringify (c['_bexchrs'], null, 2) + "\n");
     return true;
 }
 
@@ -198,51 +201,48 @@ function fetch_data (func) {
 
     c['_bexchrs'] = {};
 
-//    console.log (JSON.stringify (c['markets']));
-
     for (let i = 0; i < c['markets'].length; i++) {
 
         c['markets'][i]['_exch'].get_orderbook (c['markets'][i]['market'], function (pbody) {
 
-            console.log("got the " + c['markets'][i]['name'] + " orderbook.");
+            l.debug ("got the " + c['markets'][i]['name'] + " orderbook.");
             c['markets'][i]['_ob'] = pbody;
             if (data_fetched ()) func ();
         });
 
         c['markets'][i]['_exch'].get_current_orders (c['markets'][i]['market'], function (pbody) {
 
-            console.log("got the " + c['markets'][i]["name"] + " current orders.");
+            l.debug("got the " + c['markets'][i]["name"] + " current orders.");
             c['markets'][i]['_prev_orders'] = pbody;
             if (data_fetched ()) func ();
         });
 
         c['markets'][i]['_exch'].get_balances ( function (pbody) {
 
-//            console.log("i = " + i + "\nc[markets] = " + JSON.stringify (c['markets']));
             c['markets'][i]['_balances'] = pbody;
-            console.log("got the " + c['markets'][i]["name"] + " balances - " + JSON.stringify (c['markets'][i]['_balances']));
+            l.debug ("got the " + c['markets'][i]["name"] + " balances - " + JSON.stringify (c['markets'][i]['_balances']));
             if (data_fetched ()) func ();
         });
 
         if (c['markets'][i]['base'] != c['global_base']) {
 
-            console.log ("fetch_data - need to conver market " + i + " exchange rate for " + c['markets'][i]['base']);
+            l.debug ("fetch_data - need to conver market " + i + " exchange rate for " + c['markets'][i]['base']);
             c['_bexchrs'][c['markets'][i]['base']] = 0;
         } else {
-            console.log ("fetch_data - no need to conver market " + i + " exchange rate for " + c['markets'][i]['base']);
+            l.debug ("fetch_data - no need to conver market " + i + " exchange rate for " + c['markets'][i]['base']);
         }
     }
 
     for (let base in c['_bexchrs']) {
 
-        console.log ("fetch_data - Fetching exchange rate for " + base);
+        l.debug ("fetch_data - Fetching exchange rate for " + base);
 
         request.get ('https://min-api.cryptocompare.com/data/price?fsym=' + base.toUpperCase() + '&tsyms=' + c['global_base'].toUpperCase(),
             function (err, resp, body) {
 
-                if (err) console.log ("Error: ", err);
+                if (err) throw new Error ("ccompare error while getting " + base + " exchange rate: ", err);
                 c['_bexchrs'][base] = u.parse_json (body)[c['global_base'].toUpperCase()];
-                console.log ("fetch_data - got exchange rate for " + base + " - " + c['_bexchrs'][base] + " (body="+body+")");
+                l.debug ("fetch_data - got exchange rate for " + base + " - " + c['_bexchrs'][base] + " (body="+body+")");
 
 
                 if (data_fetched ()) func ();
@@ -255,14 +255,14 @@ function normalized_ob (m) {
     if (m['base'] == c['global_base']) {
 
 
-        console.log ("(m['base'] = " + m['base'] + ", c['global_base'] = " + c['global_base'] + ". Skipping normalization.");
+        l.debug ("(m['base'] = " + m['base'] + ", c['global_base'] = " + c['global_base'] + ". Skipping normalization.");
         return m['_ob'];
 //        m['_ob_n'] = m['_ob'];
 //        m['_prev_orders_n'] = m['_prev_orders'];
 //        m['_balances_n'] = m['_balances'];
     }
 
-    console.log ("(m['base'] = " + m['base'] + ", c['global_base'] = " + c['global_base'] + ". Normalizing.");
+    l.debug ("(m['base'] = " + m['base'] + ", c['global_base'] = " + c['global_base'] + ". Normalizing.");
 
     return m['_ob'].normalized_copy (m['_ob'], c['_bexchrs'][m['base']]);
 
@@ -274,21 +274,23 @@ function consolidate_fetched_data () {
 
     var obs = []/*, cob, prev_orders, balances*/;
 
-//    console.log ("in consolidate: markets = " + JSON.stringify (c['markets'], null, 2));
+    l.silly ("in consolidate: markets = " + JSON.stringify (c['markets'], null, 2));
 
     for (let i = 0; i < c['markets'].length; i++) {
 
-        console.log ("i = " + i + " market name = " + c['markets'][i]['name']);
-        console.log ("orig ob form = " + JSON.stringify (c['markets'][i]['_ob'].form (c['markets'][i]['_ob'], 100000, c['fit_function'])));
-        c['markets'][i]['_ob'].subtract (c['markets'][i]['_prev_orders']);
-        const nob = normalized_ob (c['markets'][i]);
-        console.log ("normalized ob form = " + JSON.stringify (nob.form (nob, 100000, c['fit_function'])));
+        let m = c['markets'][i];
+        l.debug ("i = " + i + " market name = " + m['name']);
+        l.debug ("pre-subtract 100k ob form = " + JSON.stringify (m['_ob'].form (m['_ob'], 100000, c['fit_function'])));
+        m['_ob'].subtract (m['_prev_orders']);
+        l.debug ("post-subtract 100k ob form = " + JSON.stringify (m['_ob'].form (m['_ob'], 100000, c['fit_function'])));
+        const nob = normalized_ob (m);
+        l.info ("normalized " + m['name'] + " ob 100k form = " + JSON.stringify (nob.form (nob, 100000, c['fit_function'])));
         obs.push (nob);
     }
 
-//    console.log ('obs = ' + JSON.stringify (obs, null, 2));
+    l.silly ('obs = ' + JSON.stringify (obs, null, 2));
     const cob = c['markets'][0]['_ob'].merge_obs (obs); //TODO: should be static
-    console.log ('combined ob form = ' + JSON.stringify (cob.form (cob, 300000, c['fit_function'])));
+    l.info ('combined ob form = ' + JSON.stringify (cob.form (cob, 300000, c['fit_function'])));
     return cob;
 }
 
@@ -326,19 +328,21 @@ function sample_new_orders (pdist) {
             var [midpoint, width] = [base_midpoint / c['_bexchrs'][m['base']], base_width / c['_bexchrs'][m['base']]];
         }
         
-        console.log ("Sampling orders for " + m['name']);
+        l.debug ("\nSampling orders for " + m['name']);
 //        console.log (m['name'] + 'balances - ' + JSON.stringify (m['_balances']));
-        console.log (m['name'] + ' btc balances - ' + JSON.stringify (m['_balances']['btc']));
-        console.log (m['name'] + ' eth balances - ' + JSON.stringify (m['_balances']['eth']));
-        console.log (m['name'] + ' mix balances - ' + JSON.stringify (m['_balances']['mix']));
+        l.debug (m['name'] + ' ' + m['base']  + ' balances - ' + JSON.stringify (m['_balances'][m['base']]));
+        l.debug (m['name'] + ' ' + m['asset'] + ' balances - ' + JSON.stringify (m['_balances'][m['asset']]));
+//        l.debug (m['name'] + ' btc balances - ' + JSON.stringify (m['_balances']['btc']));
+//        l.debug (m['name'] + ' eth balances - ' + JSON.stringify (m['_balances']['eth']));
+//        l.debug (m['name'] + ' mix balances - ' + JSON.stringify (m['_balances']['mix']));
         var left_to_buy  = m['_balances'][m['base']]  * m['buy_fraction'] / (midpoint + width);
         const min_buy = Math.max (m['min_trade'] / (midpoint + width), left_to_buy / m['max_vol_frac']);
-        console.log ('Init - left_to_buy = ' + left_to_buy + ' and min_buy = ' + min_buy);
+        l.debug ('Init - left_to_buy = ' + left_to_buy + ' and min_buy = ' + min_buy);
         var left_to_sell = m['_balances'][m['asset']] * m['sell_fraction'];
         const min_sell = Math.max (m['min_trade'] / midpoint, left_to_sell / m['max_vol_frac']);
-        console.log ('Init - left_to_sell = ' + left_to_sell + ' and min_sell = ' + min_sell + ' mix balance ' + m['_balances'][m['asset']] + ' sell fraction ' + m['sell_fraction']);
-        console.log ('m[_ob].min_ask = ' + m['_ob'].min_ask);
-        console.log ('m[_ob].max_bid = ' + m['_ob'].max_bid);
+        l.debug ('Init - left_to_sell = ' + left_to_sell + ' and min_sell = ' + min_sell + ' mix balance ' + m['_balances'][m['asset']] + ' sell fraction ' + m['sell_fraction']);
+        l.debug ('m[_ob].min_ask = ' + m['_ob'].min_ask);
+        l.debug ('m[_ob].max_bid = ' + m['_ob'].max_bid);
         m['_new_orders'] = [];
 
         while (true) {
@@ -348,12 +352,15 @@ function sample_new_orders (pdist) {
 
             var price = sampler.sample();
             price = midpoint + price * width / Math.sqrt(2.);
-            if (!isFinite (price)) throw ("Invalid price " + price);
+            if (!isFinite (price)) throw new Error("Invalid price " + price + " sampled from " + m['name']);
 
             if (price < midpoint) {
 
                 if (left_to_buy < min_buy) continue;
-                if (price > m['_ob'].min_ask) continue;
+                if (price > m['_ob'].min_ask) {
+                    l.info ('Buy price exceeds lowest ask in ' + m['name'] + ' (skipping)');
+                    continue;
+                }
 
                 var volume = min_buy / (1 - Math.random());         // https://arxiv.org/pdf/cond-mat/0102518.pdf (empirical, after integration and inversion)
                 if (volume > left_to_buy)
@@ -361,12 +368,15 @@ function sample_new_orders (pdist) {
 //                    continue;
 
                 left_to_buy -= volume;
-                console.log ('pushing a buy order at ' + price + ', volume = ' + volume + ' and ' + left_to_buy + ' left to buy.');
+                l.debug ('pushing a buy order at ' + price + ', volume = ' + volume + ' and ' + left_to_buy + ' left to buy.');
                 m['_new_orders'].push (abnormalize_order (m, {'side': 'buy', 'price': price, 'volume': volume, 'market': m['market']}));
             } else {
 
                 if (left_to_sell < min_sell) continue;
-                if (price < m['_ob'].max_bid) continue;
+                if (price < m['_ob'].max_bid) {
+                    l.info ('Sell price exceeds highest bid in ' + m['name'] + ' (skipping)');
+                    continue;
+                }
 
                 var volume = min_sell / (1 - Math.random());
                 if (volume > left_to_sell)
@@ -374,7 +384,7 @@ function sample_new_orders (pdist) {
 //                    continue;
 
                 left_to_sell -= volume;
-                console.log ('pushing a sell order at ' + price + ', volume = ' + volume + ' and ' + left_to_sell + ' left to sell.');
+                l.debug ('pushing a sell order at ' + price + ', volume = ' + volume + ' and ' + left_to_sell + ' left to sell.');
                 m['_new_orders'].push (abnormalize_order (m, {'side': 'sell', 'price': price, 'volume': volume, 'market': m['market']}));
             }
         }

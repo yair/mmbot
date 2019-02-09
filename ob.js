@@ -2,7 +2,8 @@
 
 const regression = require ('regression');
 
-const u = require ('./utils.js');
+const u = require ('./utils.js'),
+      l = require ('winston');
 
 module.exports = function (asks, bids, reverse_asks = true) {
 
@@ -86,7 +87,7 @@ function parabolic_width_of_log_price (ob, limit, cash_value = false) {
     const [la, lb, lc] = regression.polynomial (lpoints, { order: 2 }).equation;
     const midpoint = Math.exp (-lb / (2. * la));
     const width = Math.sqrt (b * b  - 4. * a * (c - limit)) / a;
-    console.log ('parabolic log-midpoint: ' + midpoint + ' width: ' + width + ' (non-log midpoint @' + (-b / (2. * a)) + ')');
+    l.debug ('parabolic log-midpoint: ' + midpoint + ' width: ' + width + ' (non-log midpoint @' + (-b / (2. * a)) + ')');
     return [midpoint, width];
 }
 
@@ -112,7 +113,7 @@ function parabolic_width (ob, limit, cash_value = false) {
     const [a, b, c] = regression.polynomial (points, { order: 2 }).equation;
     const midpoint = -b / (2. * a);
     const width = Math.sqrt (b * b  - 4. * a * (c - limit)) / a;
-    console.log ('parabolic midpoint: ' + midpoint + ' width: ' + width);
+    l.debug ('parabolic midpoint: ' + midpoint + ' width: ' + width);
     return [midpoint, width];
 }
 
@@ -206,10 +207,9 @@ function merge_obs (obs) {
     asks.sort((a,b) => (a[0] > b[0]) ? 1 : ((a[0] < b[0]) ? -1 : 0));
     bids.sort((a,b) => (a[0] < b[0]) ? 1 : ((a[0] > b[0]) ? -1 : 0));
 
-    console.log ('Combined asks = ' + JSON.stringify (asks));
-    console.log ('Combined bids = ' + JSON.stringify (bids));
+    l.silly ('Combined asks = ' + JSON.stringify (asks));
+    l.silly ('Combined bids = ' + JSON.stringify (bids));
     const cob = new module.exports (asks, bids, false);
-    console.log ('merge_obs: cob = ' + cob);
-    console.log ('merge_obs: combined ob form = ' + JSON.stringify (cob.form (cob, 300000, "log-parabolic")));
+    l.silly ('merge_obs: combined ob form = ' + JSON.stringify (cob.form (cob, 300000, "log-parabolic")));
     return cob;
 }

@@ -82,9 +82,14 @@ function show_summary (pdist) {
         if (m['asset'] in tots) {
             if (!(m['exchange'] in exs)) {
                 tots[m['asset']] += parseFloat (m['_balances'][m['asset']]);
+                l.debug ('total ' + m['asset'] + ' increased by ' + m['_balances'][m['asset']] + ' from ' + m['name']);
+                exs[m['exchange']] = true;
+            } else {
+                l.debug ('Skipping addition of ' + m['asset'] + ' from ' + m['name'] + ' since we already added it.');
             }
         } else {
             tots[m['asset']] = parseFloat (m['_balances'][m['asset']]);
+            exs[m['exchange']] = true;
         }
         asset = m['asset'];
     }
@@ -209,10 +214,10 @@ function fetch_data (func) {
 
         if (c['markets'][i]['base'] != c['global_base']) {
 
-            l.debug ("fetch_data - need to conver market " + i + " exchange rate for " + c['markets'][i]['base']);
+            l.debug ("fetch_data - need to convert market " + i + " exchange rate for " + c['markets'][i]['base']);
             c['_bexchrs'][c['markets'][i]['base']] = 0;
         } else {
-            l.debug ("fetch_data - no need to conver market " + i + " exchange rate for " + c['markets'][i]['base']);
+            l.debug ("fetch_data - no need to convert market " + i + " exchange rate for " + c['markets'][i]['base']);
         }
     }
 

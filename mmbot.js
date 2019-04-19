@@ -22,12 +22,14 @@ function go() {
     if (!feel_like_running ()) { return; }
 
     l.info ("Shitcoin liquifier up and running.");
+
     bind_handlers_and_lock ();
     apply_market_defaults ();
     instantiate_exchanges ();
 
     l.info ("Fetching data");
     fetch_data (function () {
+        l.info ("Data fetched. Consolidating orderbooks.\n");
 
         const cob = consolidate_orderbooks ();
 
@@ -122,6 +124,8 @@ function feel_like_running () {
     if (fs.existsSync (c['lock_file']) ||
 	    c['live'] && Math.random() > 1/c['skip_work']) {
 
+        l.warn ('Skipping work. Lockfile at ' + c['lock_file'] + ' does ' + (fs.existsSync (c['lock_file']) ? '' : ' not ') + ' exist (removing for next time).');
+//        if (fs.existsSync (c['lock_file'])) fs.unlinkSync (c['lock_file']);
         return false;
     }
     return true;
@@ -132,6 +136,8 @@ function exit_handler (e) {
     if (fs.existsSync (c['lock_file'])) fs.unlinkSync (c['lock_file']);
     if (e != null && isNaN (e)) { 
         l.error (e);
+    } else {
+        l.info ('exit_handler called without error');
     }
 }
 
@@ -256,7 +262,7 @@ function consolidate_orderbooks () {
 
     var obs = [];
 
-    l.silly ("in consolidate: markets = " + JSON.stringify (c['markets'], null, 2));
+    l.debug("in consolidate: markets = " + JSON.stringify (c['markets'], null, 2));
 
     for (let i = 0; i < c['markets'].length; i++) {
 

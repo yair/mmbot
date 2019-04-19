@@ -29,7 +29,7 @@ module.exports = function (asset) {
 
             new transports.Console({
 
-                level: 'warn',
+                level: 'debug',
                 format: format.combine(
                     format.colorize(),
                     format.printf(

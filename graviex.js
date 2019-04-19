@@ -48,7 +48,9 @@ async function get_tonce () {
 
 async function send_authed_get_cmd(cmd, params, proc, func) {
 
-	await u.sleep (Math.floor (1000 * Math.random ()));
+	await u.sleep (Math.floor (10000 * Math.random ()));
+
+    l.debug ('graviex: sending authed get cmd ' + cmd + ' params: ' + params);
 
     var tonce = await get_tonce(),
         payload = 'GET|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + params + '&tonce=' + tonce,
@@ -68,6 +70,8 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
             agent: agent
         }, function (err, resp, body) {
 
+        l.debug('graviex - got authed get response: cmd=' + cmd + ' params=' + params + ' err=' + err + ' resp=' + resp + ' body=' + body);
+
         if (err) throw('Error sending get cmd ' + cmd + ': ' + err);
         if (func != null) func (proc (u.parse_json(body)));
     });
@@ -76,6 +80,8 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
 async function send_authed_post_cmd(cmd, params, delay, proc, func) {
 
 	await u.sleep (Math.floor (parseFloat (delay) * 1000 * Math.random ()));
+
+    l.debug ('graviex: sending authed post cmd ' + cmd + ' params: ' + params);
 
     var tonce = await get_tonce(),
 	    payload = 'id' in params ? 'POST|' + graviex_api_path + cmd + '|access_key=' + secrets['access_key'] + '&id=' + params['id'] + '&tonce=' + tonce :
@@ -104,6 +110,8 @@ async function send_authed_post_cmd(cmd, params, delay, proc, func) {
                 signature: hash
             } /*)*/,
         }, function (err, resp, body) {
+
+        l.debug('graviex - got authed post response: cmd=' + cmd + ' params=' + params + ' err=' + err + ' resp=' + resp + ' body=' + body);
 
         if (resp['statusCode'] == 405)
             throw ("405 method not allowed:\nbody=" + body + "\nerr=" + err + "\nresp=" + JSON.stringify(resp) + "\ncmd=" + cmd + "\nparams=" + JSON.stringify(params));

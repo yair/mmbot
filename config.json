@@ -4,7 +4,7 @@
     "min_width": 3e-8,
     "max_width": 1e-6,
     "global_base": "btc",
-    "live": false,
+    "live": true,
     "skip_work": 1,
     "visible_depth": 300000,
     "fit_function": "log-parabolic",
@@ -15,8 +15,8 @@
         "sell_fraction": 0.15,
         "asset": "mix",
         "max_vol_frac": 14.3,
-        "live": false,
-        "cmd_delay": 30
+        "live": true,
+        "cmd_delay": 300
     },
 
     "markets": [
@@ -39,11 +39,8 @@
             "exchange":"stex",
             "market": "mixeth",
             "base": "eth",
-            "sell_fraction": 0.01,
-            "buy_fraction": 0.01,
-            "min_trade": 0.00001,
-            "live": true
-
+            "sell_fraction": 0.3,
+            "min_trade": 0.00001
         }
     ]
 }

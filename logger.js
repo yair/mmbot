@@ -29,6 +29,7 @@ module.exports = function (asset) {
 
             new transports.Console({
 
+//                level: 'warning',
                 level: 'debug',
                 format: format.combine(
                     format.colorize(),

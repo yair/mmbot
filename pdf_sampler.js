@@ -21,7 +21,10 @@ module.exports = function (pdf, cdf, guess, tolerance=1e-8) {
 
         while (err > this.tolerance) {
 
-            if (++iter > this.max_iter) throw ('pdf_sampler::sample() Failed to converge.');
+            if (++iter > this.max_iter) {
+                l.e('pdf_sampler::sample() Failed to converge.');
+                throw ('pdf_sampler::sample() Failed to converge.');
+            }
             var new_x = x - (cdf(x) - r) / pdf(x);
             err = Math.abs (new_x - x);
             x = new_x;

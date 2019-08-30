@@ -13,6 +13,8 @@ const secrets = u.parse_json (fs.readFileSync ('graviex_secrets.json')),
       graviex_base_url = 'https://graviex.net',
       graviex_api_path = '/api/v2/';
 
+const TIMEOUT = 60000; // ms
+
 module.exports = {
 
 	get_orderbook:		function (market, func) { send_authed_get_cmd ('depth.json', '&market=' + market, x => new OB (x['asks'], x['bids']), func); },
@@ -67,12 +69,16 @@ async function send_authed_get_cmd(cmd, params, proc, func) {
     request({
             url: req,
             method: 'GET',
-            agent: agent
+            agent: agent,
+            timeout: TIMEOUT
         }, function (err, resp, body) {
 
         l.debug('graviex - got authed get response: cmd=' + cmd + ' params=' + params + ' err=' + err + ' resp=' + resp + ' body=' + body);
 
-        if (err) throw('Error sending get cmd ' + cmd + ': ' + err);
+        if (err) {
+            l.e('Error sending get cmd ' + cmd + ': ' + err);
+            throw('Error sending get cmd ' + cmd + ': ' + err);
+        }
         if (func != null) func (proc (u.parse_json(body)));
     });
 }
@@ -102,6 +108,7 @@ async function send_authed_post_cmd(cmd, params, delay, proc, func) {
             url: req,
             method: 'POST',
             agent: agent,
+            timeout: TIMEOUT,
             form: /* Object.assign (params, */ {
                 access_key: secrets['access_key'],
 				id: params['id'],
@@ -113,9 +120,14 @@ async function send_authed_post_cmd(cmd, params, delay, proc, func) {
 
         l.debug('graviex - got authed post response: cmd=' + cmd + ' params=' + params + ' err=' + err + ' resp=' + resp + ' body=' + body);
 
-        if (resp['statusCode'] == 405)
+        if (resp['statusCode'] == 405) {
+            l.e("405 method not allowed:\nbody=" + body + "\nerr=" + err + "\nresp=" + JSON.stringify(resp) + "\ncmd=" + cmd + "\nparams=" + JSON.stringify(params));
             throw ("405 method not allowed:\nbody=" + body + "\nerr=" + err + "\nresp=" + JSON.stringify(resp) + "\ncmd=" + cmd + "\nparams=" + JSON.stringify(params));
-		if (err) throw ('Error sending post cmd ' + cmd + ': ' + err);
+        }
+		if (err) {
+            throw ('Error sending post cmd ' + cmd + ': ' + err);
+            l.e('Error sending post cmd ' + cmd + ': ' + err);
+        }
         if (func != null) func (proc (u.parse_json(body)));
 	});
 }
@@ -140,6 +152,7 @@ async function send_authed_buy_cmd (cmd, market, side, price, volume, delay, fun
             url: req,
             method: 'POST',
             agent: agent,
+            timeout: TIMEOUT,
             form: {
                 access_key: secrets['access_key'],
                 market: market,
@@ -151,7 +164,10 @@ async function send_authed_buy_cmd (cmd, market, side, price, volume, delay, fun
             }
         }, function (err, resp, body) {
 
-        if (err) throw ('Error sending post cmd ' + cmd + ': ' + err);
+        if (err) {
+            throw ('Error sending post cmd ' + cmd + ': ' + err);
+            l.e('Error sending post cmd ' + cmd + ': ' + err);
+        }
         if (func != null) func (u.parse_json(body));
     });
 }

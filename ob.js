@@ -28,6 +28,7 @@ function width (ob, limit, fit_func = 'log-parabolic', cash_value = false) {
         case 'log-parabolic':
             return parabolic_width_of_log_price (ob, limit, cash_value);
         case 'log-linear':
+            l.e("TODO");
             throw new Error ("TODO");
         default:
             throw ('Unsupported orderbook fitting function ' + fit_func);
@@ -50,7 +51,10 @@ function simple_width (ob, limit, cash_value = false) {
             break;
         }
     }
-    if (from == 0) throw ("simple_width: ob depleted on the bid side");
+    if (from == 0) {
+        l.e("simple_width: ob depleted on the bid side");
+        throw ("simple_width: ob depleted on the bid side");
+    }
     accum = 0;
     for (var i = 0; i < ob['asks'].length; i++) {
         var [price, amount] = ob['asks'][i];
@@ -59,6 +63,7 @@ function simple_width (ob, limit, cash_value = false) {
             return [(parseFloat(price) + parseFloat(from)) / 2., parseFloat(price) - parseFloat(from)];
         }
     }
+    l.e("simple_width: ob depleted on the ask side");
     throw ("simple_width: ob depleted on the ask side");
 }
 
@@ -140,6 +145,7 @@ function ob_subtract (ob, o) {
                     continue outer;
                 }
             }
+            l.e("Failed to find our ask in the book: " + JSON.stringify (orders[oid]));
             throw "Failed to find our ask in the book: " + JSON.stringify (orders[oid]);
         } else {
 
@@ -154,6 +160,7 @@ function ob_subtract (ob, o) {
                     continue outer;
                 }
             }
+            l.e("Failed to find our bid in the book: " + JSON.stringify (orders[oid]));
             throw "Failed to find our bid in the book: " + JSON.stringify (orders[oid]);
         }
     }
@@ -162,6 +169,7 @@ function ob_subtract (ob, o) {
 
         if (orders[oid]['remaining_volume'] != 0) {
 
+            l.e("Failed to subtract order from ob: " + JSON.stringify (orders[oid]));
             throw "Failed to subtract order from ob: " + JSON.stringify (orders[oid]);
         }
     }

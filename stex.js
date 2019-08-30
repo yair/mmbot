@@ -6,7 +6,7 @@ const fs = require ('fs'),
       OB = require ('./ob.js'),
 	  stex = require('stocks-exchange-client'),
       option = u.parse_json (fs.readFileSync ('stex_secrets.json')),
-	  sc = new stex.client (option);
+	  sc = new stex.client (option, 'https://app.stex.com/api2', 2);
 
 module.exports = {
 
@@ -68,6 +68,7 @@ function mn (market) {  // fugly, might need an api change
     if (c != null) {
         return c[1].toUpperCase() + '_BTC';
     }
+    l.e('Cannot translate market name "' + market + '" to stex naming convention');
     throw new Error ('Cannot translate market name "' + market + '" to stex naming convention');
 }
 
@@ -77,6 +78,7 @@ function rmn (sname) {
 
     if (c.length == 3) return c[1].toLowerCase () + c[2].toLowerCase ();
 
+    l.e('Cannot translate market name "' + sname + '" from stex naming convention: ' + JSON.stringify (c));
     throw new Error ('Cannot translate market name "' + sname + '" from stex naming convention: ' + JSON.stringify (c));
 }
 

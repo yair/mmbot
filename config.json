@@ -6,7 +6,7 @@
     "global_base": "btc",
     "live": true,
     "skip_work": 1,
-    "visible_depth": 300000,
+    "visible_depth": 200000,
     "fit_function": "log-parabolic",
     "lock_file": "/tmp/mmbot.lock",
 

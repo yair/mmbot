@@ -13,7 +13,7 @@ const PDFSampler = require ('./pdf_sampler.js');
 try {
     go ();
 } catch (e) {
-    l.error (e);
+    l.error ('Caught exception: ' + e + new Error().stack);
     throw (e);
 }
 
@@ -109,6 +109,7 @@ function show_summary (pdist) {
         } else if (t == c['global_base']) {
             base_value = tots[t];
         } else {
+            l.e("Unrecognized asset " + t);
             throw new Error ("Unrecognized asset " + t);
         }
         gt += base_value;
@@ -125,7 +126,7 @@ function feel_like_running () {
 	    c['live'] && Math.random() > 1/c['skip_work']) {
 
         l.warn ('Skipping work. Lockfile at ' + c['lock_file'] + ' does ' + (fs.existsSync (c['lock_file']) ? '' : ' not ') + ' exist (removing for next time).');
-//        if (fs.existsSync (c['lock_file'])) fs.unlinkSync (c['lock_file']);
+        if (fs.existsSync (c['lock_file'])) fs.unlinkSync (c['lock_file']);
         return false;
     }
     return true;
@@ -135,9 +136,13 @@ function exit_handler (e) {
 
     if (fs.existsSync (c['lock_file'])) fs.unlinkSync (c['lock_file']);
     if (e != null && isNaN (e)) { 
-        l.error (e);
+        l.error ('Exit handler caught error: ' + e);
+        l.error ('Stack on exit without error: ' + new Error().stack);
+        process.exit(1);
     } else {
         l.info ('exit_handler called without error');
+        l.error ('Stack on exit without error: ' + new Error().stack);
+        process.exit(0);
     }
 }
 
@@ -147,7 +152,7 @@ function bind_handlers_and_lock () {
     process.on('SIGINT', exit_handler.bind(null));
     process.on('SIGUSR1', exit_handler.bind(null));
     process.on('SIGUSR2', exit_handler.bind(null));
-    process.on('uncaughtException', e => exit_handler(e));
+    process.on('uncaughtException', e => console.error(e) && exit_handler(e));
 
     fs.open (c['lock_file'], "wx", function (err, fd) { fs.close (fd, function (err) {}) });
 }
@@ -179,12 +184,19 @@ function data_fetched () {
             !("_prev_orders" in c['markets'][i]) ||
             !("_balances" in c['markets'][i])) {
 
+                l.debug('data_fetched: ' + c['markets'][i]['mname'] + ': ob=' + c['markets'][i]['_ob'] +
+                                                                      ', _prev_orders=' + c['markets'][i]['_prev_orders'] +
+                                                                      ', _balances=' + c['markets'][i]['_balances']);
                 return false;
         }
     }
     for (var base in c['_bexchrs']) {
 
-        if (c['_bexchrs'][base] == 0) return false;
+        if (c['_bexchrs'][base] == 0) {
+            
+            l.debug('data_fetched: _bexchrs[' + base + '] = ' + c['_bexchrs'][base]);
+            return false;
+        }
     }
 
     l.debug ("data_fetched returning true. base exchange rate are: " + JSON.stringify (c['_bexchrs'], null, 2) + "");
@@ -234,7 +246,10 @@ function fetch_data (func) {
         request.get ('https://min-api.cryptocompare.com/data/price?fsym=' + base.toUpperCase() + '&tsyms=' + c['global_base'].toUpperCase(),
             function (err, resp, body) {
 
-                if (err) throw new Error ("ccompare error while getting " + base + " exchange rate: ", err);
+                if (err) {
+                    l.e("ccompare error while getting " + base + " exchange rate: ", err);
+                    throw new Error ("ccompare error while getting " + base + " exchange rate: ", err);
+                }
                 c['_bexchrs'][base] = u.parse_json (body)[c['global_base'].toUpperCase()];
                 l.debug ("fetch_data - got exchange rate for " + base + " - " + c['_bexchrs'][base] + " (body="+body+")");
 
@@ -294,8 +309,10 @@ function generate_price_distribution (cob) {
 
         pdf = x => (1. / Math.sqrt (2 * Math.PI)) * x * x * Math.exp (-x*x/2.);
         cdf = x => ((1. + erf (x/Math.sqrt(2.))) / 2.) - x * Math.exp (-x*x/2.) / Math.sqrt (2. * Math.PI)
-    } else
+    } else {
+        l.e("Price distribution " + c['distribution'] + " not supported");
         throw ("Price distribution " + c['distribution'] + " not supported");
+    }
 
     return [midpoint, width, new PDFSampler (pdf, cdf, 1)];
 }
@@ -337,7 +354,10 @@ function sample_new_orders (pdist) {
 
             var price = sampler.sample();
             price = midpoint + price * width / Math.sqrt(2.);
-            if (!isFinite (price)) throw new Error("Invalid price " + price + " sampled from " + m['name']);
+            if (!isFinite (price)) {
+                l.e("Invalid price " + price + " sampled from " + m['name']);
+                throw new Error("Invalid price " + price + " sampled from " + m['name']);
+            }
 
             if (price < midpoint) {
 

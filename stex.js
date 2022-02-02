@@ -28,6 +28,8 @@ module.exports = {
 
 function ba_parse (res) {
 
+    l.debug("stex.ba_parse() called");
+
     var resp = u.parse_json (res);
     l.debug ("ba_parse resp = " + JSON.stringify (resp));
     l.debug ("ba_parse: resp['data']['hold_funds']['MIX'] = " + resp['data']['hold_funds']['MIX']);
@@ -37,6 +39,8 @@ function ba_parse (res) {
 }
 
 function co_parse (res) {
+
+    l.debug("stex.co_parse() called");
 
     var resp = u.parse_json (res);
 
@@ -49,6 +53,8 @@ function co_parse (res) {
 }
 
 function ob_parse (res) {
+
+    l.debug("stex.ob_parse() called");
 
     var resp = u.parse_json (res);
 
